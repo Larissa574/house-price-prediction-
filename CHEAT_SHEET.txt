@@ -1,0 +1,248 @@
+╔══════════════════════════════════════════════════════════════════════════╗
+║                    CHEAT SHEET - LES 10 CHOSES CLES                       ║
+│                   À Retenir Pour NE PAS OUBLIER                           │
+╚══════════════════════════════════════════════════════════════════════════╝
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1️⃣  PIPELINE = CHAINE DE MONTAGE
+
+   Pipeline([
+       ('step1', transformer1),
+       ('step2', transformer2),
+       ('step3', model)
+   ])
+
+   ✅ Données brutes
+   ► Transformée par step1
+   ► Transformée par step2
+   ► Entraîne le modèle step3
+   ✅ Prédictions
+
+   → ONE OBJECT pour tout !
+   → Évite les fuites d'info (data leakage)
+   → Réutilisable
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+2️⃣  COLUMNTRANSFORMER = APPLIQUE DIFFÉRENTES TRANSFORMATIONS SELON LE TYPE
+
+   ColumnTransformer([
+       ('num', pipeline_num, ['Age', 'Revenu']),
+       ('cat', pipeline_cat, ['Type_Maison'])
+   ])
+
+   📊 Pour numérique :
+      SimpleImputer(strategy='median')  ← Remplace NaN
+      StandardScaler()                  ← Centre & réduit
+   
+   📝 Pour catégorique :
+      SimpleImputer(strategy='most_frequent')  ← Remplace NaN
+      OneHotEncoder()                          ← Texte → {0,1}
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+3️⃣  STANDARDSCALER REND LES NOMBRES COMPARABLES
+
+   AVANT : [50000, 75000, 100000]  ← Grande échelle, difficile à comparer
+   
+   APRÈS : [-1.2, 0.0, 1.2]        ← Centrée (μ=0), réduite (σ=1), comparable
+
+   Formule : x_scaled = (x - mean(x)) / std(x)
+
+   Pourquoi ?
+   ► Les modèles linéaires (Ridge, Lasso) dépendent de l'échelle
+   ► Les données sur différentes échelles biaisent les algorithmes
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+4️⃣  ONEHOTENCODER TRANSFORME DU TEXTE EN NOMBRES
+
+   AVANT : ['Studio', 'Villa', 'Studio']
+   
+   APRÈS : Studio | Villa
+              0   | 0      ← (on drop le premier)
+              1   | 0
+              0   | 1
+
+   Pourquoi drop='first' ?
+   ► Évite la multicolinéarité parfaite (Studio + Villa = 1 toujours)
+   ► Réduit les colonnes inutiles
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+5️⃣  SELECTKBEST CHOISIT LES MEILLEURES K VARIABLES
+
+   SelectKBest(score_func=f_regression, k=50)
+
+   ✅ Calcule le score de chaque variable avec f_regression
+   ✅ Garde les 50 meilleures
+   ✅ Élimine le bruit (variables sans rapport)
+
+   k='all' = Garde toutes les variables
+   k=30 = Garde les 30 meilleures
+   k=50 = Garde les 50 meilleures
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+6️⃣  GRIDSEARCHCV TESTE TOUTES LES COMBINAISONS & TROUVE LA MEILLEURE
+
+   param_grid = [
+       {'model': [Ridge()], 'model__alpha': [0.1, 1.0, 10.0]},
+       {'model': [Lasso()], 'model__alpha': [0.001, 0.01, 0.1]},
+   ]
+
+   process :
+   ► Ridge + alpha=0.1 ──► 5-fold CV ──► Score moyen
+   ► Ridge + alpha=1.0  ──► 5-fold CV ──► Score moyen
+   ► Ridge + alpha=10.0 ──► 5-fold CV ──► Score moyen
+   ► Lasso + alpha=0.001 ──► ...
+   ► ... (9 au total)
+
+   ✅ Retient la combinaison avec le MEILLEUR score
+   ✅ `grid.best_estimator_` = modèle final avec meilleurs params
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+7️⃣  5-FOLD CROSS-VALIDATION = ÉVALUATION ROBUSTE
+
+   Divise les données en 5 parties :
+   
+   [Fold 1] [Fold 2] [Fold 3] [Fold 4] [Fold 5]
+   ─────────────────────────────────────────────
+   
+   Iteration 1 : Test sur Fold 1, Entraîne sur Fold 2-5 ──► Score₁
+   Iteration 2 : Test sur Fold 2, Entraîne sur Fold 1,3-5 ──► Score₂
+   Iteration 3 : Test sur Fold 3, Entraîne sur Fold 1-2,4-5 ──► Score₃
+   ... (5 fois)
+
+   Score CV final = Moyenne des 5 scores
+   Écart-type CV = Stabilité (petit = stable)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+8️⃣  METRIQUES - LES 3 PRINCIPALES
+
+   📍 RMSE (Root Mean Squared Error)
+      Formula : √(Σ(y_réel - y_prédit)² / n)
+      Interpretation : "Erreur moyenne en dollars"
+      Exemple : RMSE=30000$ → Je me trompe en moyenne de 30k$
+      → Plus bas = MIEUX ✅
+
+   📍 MAE (Mean Absolute Error)
+      Formula : Σ|y_réel - y_prédit| / n
+      Interpretation : "Valeur absolue de l'erreur moyenne"
+      Moins sensible aux valeurs extrêmes que RMSE
+      → Plus bas = MIEUX ✅
+
+   📍 R² (Coefficient de Détermination)
+      Formula : 1 - (SS_résidus / SS_total)
+      Interpretation : "% de la variabilité que j'explique"
+      R² = 0.85 → J'explique 85% de la variation des prix
+      Range : [0, 1] (négatif possible si très mauvais)
+      → Plus HAUT = MIEUX ✅
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+9️⃣  LES 3 GRAPHIQUES & CE QU'ILS MONTRENT
+
+   📊 GRAPHIQUE 1 : Comparaison de tous les modèles (3 sous-graphes)
+   
+      [R²]      [RMSE]    [CV Scores]
+      ─────────────────────────────
+      Lequel    Lequel    Lequel est
+      explique  a les      le plus
+      le plus  petites     stable ?
+      ?         erreurs ?
+
+   📊 GRAPHIQUE 2 : Prédictions vs Réel (scatter)
+      
+      ↑ y_prédit
+      |      .  ← Point = 1 prédiction
+      |     .. ← Proche de la diagonale rouge = BON
+      |    ...
+      |_______→ y_réel
+      
+      Si points loin de la ligne rouge : grandes erreurs
+
+   📊 GRAPHIQUE 3 : Analyse des Résidus (2 sous-graphes)
+      
+      Résidus vs Prédictions :
+         Si centré autour de 0 = NORMAL (pas de biais)
+         Si monte/descend = Le modèle est biaisé
+      
+      Histogramme des résidus :
+         Si forme en cloche = NORMAL (distribution normale)
+         Si asymétrique = Problème
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔟  LE FLUX DES 5 ETAPES
+
+   ETAPE 1 : Créer le preprocessor (ColumnTransformer)
+            Nettoie & transforme les données
+   
+   ETAPE 2 : Créer le pipeline
+            Assemble preprocessor + SelectKBest + modèle placeholder
+   
+   ETAPE 3 : Créer param_grid
+            Liste tous les paramètres à tester
+   
+   ETAPE 4 : Lancer GridSearchCV
+            Teste toutes les combinaisons, trouve la meilleure
+   
+   ETAPE 5 : Évaluer & Visualiser
+            Crée des graphiques, calcule métriques, sauvegarde
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 QUESTIONS A TE POSER POUR VOIR SI TU AS COMPRIS
+
+□ Pourquoi StandardScaler est nécessaire avant Ridge/Lasso ?
+→ Parce que Ridge/Lasso pénalisent la magnitude des coefficients
+  Si une variable est sur une plus grande échelle, elle dominera
+
+□ Qu'est-ce qu'un data leak et pourquoi Pipeline l'évite ?
+→ Data leak = tester sur les données d'entraînement indirectement
+  Pipeline fit le preprocessor SUR train, puis applique à test
+  Pas de "connaissance" du test qui pollue le train
+
+□ Pourquoi 5-fold CV ?
+→ Pour évaluer si le modèle se généralise bien
+  Si un modèle surperforme sur une partie = overfitting
+  CV détecte ça (scores instables = Std élevé)
+
+□ Quelle différence entre best_score_ et score sur test ?
+→ best_score_ = Score CV sur l'ensemble d'entraînement
+  score sur test = Score sur l'ensemble de test complètement nouveau
+  La différence mesure l'overfitting
+
+□ Pourquoi "k" du SelectKBest est aussi un hyper-paramètre ?
+→ Trop peu de variables (k=10) = underfitting
+  Trop de variables (k='all') = overfitting
+  Faut trouver le bon équilibre → tester avec GridSearch
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💡 CONSEILS POUR NE PAS OUBLIER
+
+✅ Lis le GUIDE_COMPREHENSION.md en entier une fois
+✅ Exécute tous les exemples du fichier EXEMPLES_PRATIQUES.py
+✅ Modifie les exemples (change alpha, k, etc.) et voies la différence
+✅ Explique chaque étape à quelqu'un d'autre (parler aide à mémoriser !)
+✅ Refais le preprocessing à la main sur un petit dataset
+✅ Crée une mindmap papier des concepts
+✅ Code un mini-pipeline tout seul, sans copier-coller
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
